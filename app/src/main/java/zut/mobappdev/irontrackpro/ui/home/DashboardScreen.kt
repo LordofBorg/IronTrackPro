@@ -1,6 +1,8 @@
 package zut.mobappdev.irontrackpro.ui.home
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
@@ -8,19 +10,32 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import zut.mobappdev.irontrackpro.domain.model.Workout
 import zut.mobappdev.irontrackpro.ui.theme.IronTrackProTheme
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DashboardScreen(modifier: Modifier = Modifier,
-                    onStartWorkoutClick: () -> Unit = {},
-                    onNavigateToMap: () -> Unit = {},
-                    onNavigateToProgress: () -> Unit = {}) {
+fun DashboardScreen(
+    modifier: Modifier = Modifier,
+    onStartWorkoutClick: () -> Unit = {},
+    onNavigateToMap: () -> Unit = {},
+    onNavigateToProgress: () -> Unit = {},
+    viewModel: DashboardViewModel = hiltViewModel()
+) {
+    val state by viewModel.state.collectAsState()
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -45,7 +60,7 @@ fun DashboardScreen(modifier: Modifier = Modifier,
                     icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
                     label = { Text("Home") },
                     selected = true,
-                    onClick = { /* Вже тут */ }
+                    onClick = { /* Already here */ }
                 )
                 NavigationBarItem(
                     icon = { Icon(Icons.Default.Place, contentDescription = "Map") },
@@ -62,46 +77,77 @@ fun DashboardScreen(modifier: Modifier = Modifier,
             }
         }
     ) { innerPadding ->
-        Column(
+        Box(
             modifier = modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(16.dp)
         ) {
-            Text(
-                text = "Recent Workouts (Offline Cached)",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Фейковий список тренувань
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(text = "Chest & Triceps", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    Text(text = "Yesterday • 1h 15m", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = "Bench Press: 80kg 4x8\nTriceps Pushdown: 25kg 3x12\nCreatine: 5g")
+            when {
+                state.isLoading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+                state.error != null -> {
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = state.error ?: "Unknown error",
+                            color = MaterialTheme.colorScheme.error,
+                            fontSize = 16.sp
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(onClick = { viewModel.loadWorkouts() }) {
+                            Text("Retry")
+                        }
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        item {
+                            Text(
+                                text = "Recent Workouts (Offline Cached)",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                        items(state.workouts, key = { it.id }) { workout ->
+                            WorkoutCard(workout = workout)
+                        }
+                    }
                 }
             }
+        }
+    }
+}
 
-            Spacer(modifier = Modifier.height(16.dp))
+@Composable
+private fun WorkoutCard(workout: Workout) {
+    val dateFormat = SimpleDateFormat("MMM d", Locale.getDefault())
+    val dateString = dateFormat.format(Date(workout.dateEpoch))
+    val durationString = "${workout.durationMinutes / 60}h ${workout.durationMinutes % 60}m"
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(text = "Back & Biceps", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    Text(text = "April 4 • 1h 05m", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = "Deadlift: 120kg 3x5\nPull-ups: 3x8\nCreatine: 5g")
-                }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(text = workout.title, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text(
+                text = "$dateString • $durationString",
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (!workout.supplements.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(text = "💊 ${workout.supplements}")
             }
         }
     }

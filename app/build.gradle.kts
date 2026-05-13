@@ -21,15 +21,14 @@ android {
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // Вручну читаємо local.properties
+        // local.properties
         val localProperties = Properties()
         val localPropertiesFile = rootProject.file("local.properties")
         if (localPropertiesFile.exists()) {
             localProperties.load(localPropertiesFile.inputStream())
         }
-        val apiKey = localProperties.getProperty("EXERCISE_DB_API_KEY") ?: "КЛЮЧ_НЕ_ЗНАЙДЕНО"
+        val apiKey = localProperties.getProperty("EXERCISE_DB_API_KEY") ?: "KEY_NOT_FOUND"
 
-        // Передаємо в BuildConfig з лапками!
         buildConfigField("String", "EXERCISE_DB_API_KEY", "\"$apiKey\"")
     }
 

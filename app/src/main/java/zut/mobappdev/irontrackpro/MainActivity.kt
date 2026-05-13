@@ -9,9 +9,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
+import dagger.hilt.android.AndroidEntryPoint // <-- Імпортували Hilt
 import zut.mobappdev.irontrackpro.ui.navigation.AppNavGraph
 import zut.mobappdev.irontrackpro.ui.theme.IronTrackProTheme
 
+@AndroidEntryPoint // <-- ДОДАЛИ ЦЮ АНОТАЦІЮ
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

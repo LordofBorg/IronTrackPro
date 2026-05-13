@@ -1,4 +1,7 @@
 package zut.mobappdev.irontrackpro
 
-class IronTrackApplication {
-}
+import android.app.Application
+import dagger.hilt.android.HiltAndroidApp
+
+@HiltAndroidApp
+class IronTrackApplication : Application()
